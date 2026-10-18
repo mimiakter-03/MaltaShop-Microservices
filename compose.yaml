@@ -1,0 +1,36 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  order:
+    build: ./order-service
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      ORDER_DB: /data/orders.db
+      RABBITMQ_HOST: rabbitmq
+      DEMO_ADMIN_KEY: ${DEMO_ADMIN_KEY:-change-me}
+    volumes:
+      - orders:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  notification:
+    build: ./notification-service
+    environment:
+      NOTIFICATION_DB: /data/notifications.db
+      RABBITMQ_HOST: rabbitmq
+    volumes:
+      - notifications:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+volumes:
+  orders:
+  notifications:

@@ -1,0 +1,30 @@
+name: MaltaShop CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: pip install -r order-service/requirements.txt
+      - name: Python syntax checks
+        run: python -m compileall -q order-service notification-service tests
+      - name: Unit and contract tests
+        run: python -m unittest discover -s tests -v
+      - name: Build Order Docker image
+        run: docker build -t maltashop-order:ci ./order-service
+      - name: Build Notification Docker image
+        run: docker build -t maltashop-notification:ci ./notification-service
+      - name: Validate Docker Compose configuration
+        run: docker compose config -q
